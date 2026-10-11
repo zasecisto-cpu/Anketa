@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hodnocení čistoty - Autobusové stanoviště Český Těšín</title>
+  <meta name="description" content="Anketa spokojenosti s čistotou autobusového stanoviště v Českém Těšíně. Provozovatel REGIS-CZECH, spol. s r.o.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & základní nastavení */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #F2F3F5;
+      color: #2A2C4E;
+      font-family: 'Open Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px 12px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Karta ankety */
+    .survey-card {
+      background-color: #FFFFFF;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 4px 20px rgba(42, 44, 78, 0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Horní část záhlaví */
+    .header-top {
+      padding: 24px 20px 14px 20px;
+      text-align: center;
+    }
+
+    .main-title {
+      color: #DDB43C;
+      font-weight: 800;
+      font-size: 1.35rem;
+      line-height: 1.25;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+
+    .sub-title {
+      color: #5E6080;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    /* Plný žlutý pruh přes celou šířku */
+    .operator-bar {
+      background-color: #DDB43C;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+      padding: 9px 16px;
+      text-transform: uppercase;
+    }
+
+    /* Obsah karty */
+    .card-body {
+      padding: 22px 20px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .group-label {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #2A2C4E;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .required-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #DDB43C;
+      text-transform: uppercase;
+    }
+
+    /* Tlačítka ANO / NE */
+    .toggle-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-toggle {
+      background-color: #FFFFFF;
+      border: 2px solid #2A2C4E;
+      color: #2A2C4E;
+      border-radius: 14px;
+      min-height: 52px;
+      font-family: inherit;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      user-select: none;
+    }
+
+    .btn-toggle:active {
+      transform: scale(0.98);
+    }
+
+    .btn-toggle.selected {
+      background-color: #DDB43C;
+      border-color: #2A2C4E;
+      color: #2A2C4E;
+    }
+
+    /* Hvězdičkové hodnocení */
+    .star-rating-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stars-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 0;
+    }
+
+    .star-btn {
+      background: none;
+      border: none;
+      padding: 6px;
+      cursor: pointer;
+      min-width: 48px;
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      transition: transform 0.12s ease;
+    }
+
+    .star-btn:active {
+      transform: scale(0.92);
+    }
+
+    .star-icon {
+      width: 42px;
+      height: 42px;
+      stroke: #2A2C4E;
+      stroke-width: 1.8;
+      stroke-linejoin: round;
+      fill: transparent;
+      transition: fill 0.15s ease, stroke 0.15s ease, transform 0.15s ease;
+    }
+
+    .star-btn.active .star-icon {
+      fill: #DDB43C;
+      stroke: #2A2C4E;
+    }
+
+    .star-description {
+      font-size: 0.85rem;
+      color: #5E6080;
+      text-align: center;
+      min-height: 20px;
+      font-weight: 600;
+    }
+
+    /* Textové pole */
+    .textarea-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-textarea {
+      width: 100%;
+      min-height: 96px;
+      border: 2px solid #2A2C4E;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: #2A2C4E;
+      resize: vertical;
+      background-color: #FFFFFF;
+      transition: border-color 0.15s ease;
+    }
+
+    .input-textarea:focus {
+      outline: none;
+      border-color: #DDB43C;
+    }
+
+    .char-counter {
+      font-size: 0.8rem;
+      color: #5E6080;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    /* Tlačítko Odeslat */
+    .btn-submit {
+      background-color: #2A2C4E;
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border: none;
+      border-radius: 14px;
+      min-height: 54px;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.2s ease, transform 0.1s ease, background-color 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-submit:not(:disabled):active {
+      transform: scale(0.98);
+    }
+
+    /* Chybové hlášení */
+    .alert-box {
+      background-color: #FFF3CD;
+      border: 1.5px solid #DDB43C;
+      color: #2A2C4E;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .alert-box.show {
+      display: flex;
+    }
+
+    .btn-retry {
+      align-self: flex-start;
+      background: #2A2C4E;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Obrazovka po odeslání nebo při limitu */
+    .state-screen {
+      display: none;
+      text-align: center;
+      padding: 30px 16px 20px 16px;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .state-screen.show {
+      display: flex;
+    }
+
+    .state-icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background-color: #DDB43C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .state-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #2A2C4E;
+      line-height: 1.3;
+    }
+
+    .state-text {
+      font-size: 1rem;
+      color: #5E6080;
+      line-height: 1.5;
+      font-weight: 600;
+      max-width: 320px;
+    }
+
+    /* Patička */
+    .footer {
+      padding: 16px 20px 20px 20px;
+      text-align: center;
+      border-top: 1px solid #F0F1F4;
+    }
+
+    .footer-text {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #2A2C4E;
+      letter-spacing: 0.02em;
+    }
+
+    /* Skrytý honeypot pro boty */
+    .sr-honeypot {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+
+    /* Spinner animace */
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hlavní karta ankety -->
+  <main class="survey-card" role="main">
+    
+    <!-- 1. Nadpisy -->
+    <header class="header-top">
+      <h1 class="main-title">JAK JSTE SPOKOJENI S ČISTOTOU?</h1>
+      <p class="sub-title" id="location-display">Autobusové stanoviště Český Těšín</p>
+    </header>
+
+
+    <!-- Formulář -->
+    <form id="survey-form" class="card-body" novalidate>
+      
+      <!-- Skrytý Honeypot proti botům -->
+      <div class="sr-honeypot" aria-hidden="true">
+        <label for="hp-check">Nevyplňujte:</label>
+        <input type="text" id="hp-check" name="hp_field" tabindex="-1" autocomplete="off">
+      </div>
+
+      <!-- 2. Otázka „Je tu čisto?“ (ANO / NE) -->
+      <div class="form-group">
+        <div class="group-label">
+          <span>Je tu čisto?</span>
+          <span class="required-badge">* povinné</span>
+        </div>
+        <div class="toggle-row" role="radiogroup" aria-label="Je tu čisto?">
+          <button type="button" class="btn-toggle" id="btn-ano" data-val="ANO" role="radio" aria-checked="false">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            ANO
+          </button>
+          <button type="button" class="btn-toggle" id="btn-ne" data-val="NE" role="radio" aria-checked="false">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            NE
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Hodnocení 1–5 hvězdiček -->
+      <div class="form-group star-rating-wrapper">
+        <div class="group-label">
+          <span>Celkové hodnocení</span>
+          <span class="required-badge">* povinné</span>
+        </div>
+        <div class="stars-container" id="stars-row" role="radiogroup" aria-label="Hodnocení 1 až 5 hvězdiček">
+          <!-- 5 hvězdiček -->
+          <button type="button" class="star-btn" data-star="1" aria-label="1 hvězdička z 5" role="radio" aria-checked="false">
+            <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+          <button type="button" class="star-btn" data-star="2" aria-label="2 hvězdičky z 5" role="radio" aria-checked="false">
+            <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+          <button type="button" class="star-btn" data-star="3" aria-label="3 hvězdičky z 5" role="radio" aria-checked="false">
+            <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+          <button type="button" class="star-btn" data-star="4" aria-label="4 hvězdičky z 5" role="radio" aria-checked="false">
+            <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+          <button type="button" class="star-btn" data-star="5" aria-label="5 hvězdiček z 5" role="radio" aria-checked="false">
+            <svg class="star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+        </div>
+        <div class="star-description" id="star-desc" aria-live="polite">Vyberte 1 až 5 hvězdiček</div>
+      </div>
+
+      <!-- 4. Textové pole „Chcete nám něco vzkázat?“ -->
+      <div class="form-group textarea-wrapper">
+        <label for="feedback-text" class="group-label">
+          Chcete nám něco vzkázat? <span style="font-size:0.85rem; font-weight:normal; color:#5E6080;">(nepovinné)</span>
+        </label>
+        <textarea id="feedback-text" class="input-textarea" maxlength="300" placeholder="Napište nám vaši připomínku či pochvalu..." rows="3"></textarea>
+        <div class="char-counter" id="char-counter">0 / 300 znaků</div>
+      </div>
+
+      <!-- Chybová hláška při selhání sítě -->
+      <div id="error-alert" class="alert-box" role="alert">
+        <span id="error-msg">Odeslání se nezdařilo. Zkontrolujte připojení k internetu a zkuste to znovu.</span>
+        <button type="button" id="btn-retry" class="btn-retry">Zkusit znovu</button>
+      </div>
+
+      <!-- 5. Tlačítko ODESLAT -->
+      <button type="submit" id="btn-submit" class="btn-submit" disabled>
+        <span id="submit-text">ODESLAT</span>
+      </button>
+
+    </form>
+
+    <!-- 6. Obrazovka po odeslání (Úspěch) -->
+    <div id="success-screen" class="state-screen" aria-live="polite">
+      <div class="state-icon-circle">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2A2C4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h2 class="state-title">Děkujeme!</h2>
+      <p class="state-text">Vaše hodnocení nám pomáhá udržet stanoviště čisté.</p>
+    </div>
+
+    <!-- Obrazovka limitu 1 hodiny (Anti-spam) -->
+    <div id="cooldown-screen" class="state-screen" aria-live="polite">
+      <div class="state-icon-circle">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2A2C4E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <h2 class="state-title">Děkujeme, hodnocení jste už odeslali.</h2>
+      <p class="state-text" id="cooldown-time-msg">Z jednoho zařízení lze hodnotit jednou za hodinu.</p>
+    </div>
+
+    <!-- 7. Patička -->
+    <footer class="footer">
+      <p class="footer-text">PROVOZOVATEL: REGIS-CZECH, spol. s r.o.</p>
+    </footer>
+
+  </main>
+
+  <script>
+    // ==========================================
+    // KONFIGURACE - VLOŽTE URL GOOGLE APPS SCRIPT
+    // ==========================================
+    const SCRIPT_URL = ""; // <-- Sem vložte URL webové aplikace Google Apps Script (https://script.google.com/macros/s/.../exec)
+    
+    // Klíč pro uložení času v localStorage (ochrana proti spamu: 1 hodina)
+    const STORAGE_KEY = "regis_cleanliness_rating_timestamp";
+    const COOLDOWN_MS = 60 * 60 * 1000; // 1 hodina v milisekundách
+
+    // Popisy hvězdiček v češtině
+    const STAR_LABELS = {
+      1: "1 hvězdička (Velmi nespokojen/a)",
+      2: "2 hvězdičky (Nespokojen/a)",
+      3: "3 hvězdičky (Průměr)",
+      4: "4 hvězdičky (Spokojen/a)",
+      5: "5 hvězdiček (Velmi spokojen/a)"
+    };
+
+    // Stav formuláře
+    let selectedClean = null;   // 'ANO' | 'NE' | null
+    let selectedRating = null;  // 1 .. 5 | null
+    let isSubmitting = false;
+
+    // Prvky v DOM
+    const form = document.getElementById("survey-form");
+    const successScreen = document.getElementById("success-screen");
+    const cooldownScreen = document.getElementById("cooldown-screen");
+    const locationDisplay = document.getElementById("location-display");
+    
+    const btnAno = document.getElementById("btn-ano");
+    const btnNe = document.getElementById("btn-ne");
+    const starBtns = document.querySelectorAll(".star-btn");
+    const starDesc = document.getElementById("star-desc");
+    const feedbackText = document.getElementById("feedback-text");
+    const charCounter = document.getElementById("char-counter");
+    const btnSubmit = document.getElementById("btn-submit");
+    const submitText = document.getElementById("submit-text");
+    const hpField = document.getElementById("hp-check");
+    const errorAlert = document.getElementById("error-alert");
+    const errorMsg = document.getElementById("error-msg");
+    const btnRetry = document.getElementById("btn-retry");
+
+    // Načtení parametru ?misto= z URL (výchozí: autobusove-stanoviste)
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawPlace = urlParams.get("misto") || "autobusove-stanoviste";
+
+    // Formátování názvu místa pro zobrazení
+    function formatPlaceTitle(slug) {
+      if (!slug || slug === "autobusove-stanoviste") {
+        return "Autobusové stanoviště Český Těšín";
+      }
+      // Hezký převod např. "stanoviste-1" -> "Autobusové stanoviště Český Těšín (stanoviště 1)"
+      const cleanName = slug.replace(/[-_]+/g, ' ').trim();
+      return "Autobusové stanoviště Český Těšín (" + cleanName + ")";
+    }
+    locationDisplay.textContent = formatPlaceTitle(rawPlace);
+
+    // Kontrola 1 hodinového limitu v localStorage
+    function checkCooldown() {
+      const lastSent = localStorage.getItem(STORAGE_KEY);
+      if (lastSent) {
+        const diff = Date.now() - parseInt(lastSent, 10);
+        if (diff < COOLDOWN_MS) {
+          const remainingMinutes = Math.ceil((COOLDOWN_MS - diff) / 60000);
+          showCooldownScreen(remainingMinutes);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function showCooldownScreen(mins) {
+      form.style.display = "none";
+      successScreen.classList.remove("show");
+      cooldownScreen.classList.add("show");
+      const timeMsg = document.getElementById("cooldown-time-msg");
+      if (timeMsg && mins) {
+        timeMsg.textContent = "Z jednoho zařízení lze hodnotit jednou za hodinu. Další hodnocení můžete odeslat za " + mins + " min.";
+      }
+    }
+
+    function showSuccessScreen() {
+      form.style.display = "none";
+      cooldownScreen.classList.remove("show");
+      successScreen.classList.add("show");
+      // Posun na začátek karty
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Aktualizace stavu tlačítka ODESLAT
+    function updateSubmitButtonState() {
+      const isValid = (selectedClean !== null) && (selectedRating !== null);
+      btnSubmit.disabled = !isValid || isSubmitting;
+    }
+
+    // Obsluha tlačítka ANO / NE
+    btnAno.addEventListener("click", () => {
+      selectedClean = "ANO";
+      btnAno.classList.add("selected");
+      btnAno.setAttribute("aria-checked", "true");
+      btnNe.classList.remove("selected");
+      btnNe.setAttribute("aria-checked", "false");
+      updateSubmitButtonState();
+    });
+
+    btnNe.addEventListener("click", () => {
+      selectedClean = "NE";
+      btnNe.classList.add("selected");
+      btnNe.setAttribute("aria-checked", "true");
+      btnAno.classList.remove("selected");
+      btnAno.setAttribute("aria-checked", "false");
+      updateSubmitButtonState();
+    });
+
+    // Obsluha hvězdiček
+    starBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const val = parseInt(btn.getAttribute("data-star"), 10);
+        selectedRating = val;
+        
+        starBtns.forEach(b => {
+          const bVal = parseInt(b.getAttribute("data-star"), 10);
+          if (bVal <= val) {
+            b.classList.add("active");
+            b.setAttribute("aria-checked", "true");
+          } else {
+            b.classList.remove("active");
+            b.setAttribute("aria-checked", "false");
+          }
+        });
+
+        starDesc.textContent = STAR_LABELS[val] || (val + " hvězdiček z 5");
+        updateSubmitButtonState();
+      });
+    });
+
+    // Počítadlo znaků pro textové pole
+    feedbackText.addEventListener("input", () => {
+      const length = feedbackText.value.length;
+      charCounter.textContent = length + " / 300 znaků";
+    });
+
+    // Funkce pro odeslání dat
+    async function submitFeedback() {
+      // 1. Kontrola Honeypot pole
+      if (hpField && hpField.value.trim() !== "") {
+        console.warn("Spam bot detekován.");
+        showSuccessScreen();
+        return;
+      }
+
+      // 2. Kontrola povinných polí
+      if (!selectedClean || !selectedRating) {
+        return;
+      }
+
+      isSubmitting = true;
+      btnSubmit.disabled = true;
+      errorAlert.classList.remove("show");
+      submitText.innerHTML = '<div class="spinner"></div> Odesílám...';
+
+      // Příprava dat pro Google Tabulky
+      const payload = {
+        timestamp: new Date().toISOString(),
+        formattedDate: new Date().toLocaleString("cs-CZ", { timeZone: "Europe/Prague" }),
+        misto: rawPlace,
+        cisto: selectedClean,
+        hodnoceni: selectedRating,
+        poznamka: feedbackText.value.trim()
+      };
+
+      try {
+        if (!SCRIPT_URL) {
+          // Pokud SCRIPT_URL ještě není vyplněna, simulujeme úspěšné odeslání pro testování
+          console.log("Mock odeslání (SCRIPT_URL není nastavena):", payload);
+          await new Promise(r => setTimeout(r, 600));
+        } else {
+          // Odeslání metodou POST (Google Apps Script) bez CORS preflightu
+          const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(payload),
+            redirect: "follow"
+          });
+
+          // Odpověď zpracuj jako JSON; pokud obsahuje status "success", zobraz poděkování.
+          // Pokud čtení odpovědi selže, ale síťový požadavek proběhl, považuj odeslání za úspěšné.
+          try {
+            const resData = await response.json();
+            if (resData && resData.status && resData.status !== "success") {
+              throw new Error(resData.message || `Server vrátil stav: ${resData.status}`);
+            }
+          } catch (readErr) {
+            console.error("Chyba při čtení odpovědi z Google Apps Script:", readErr);
+            // Síťový požadavek proběhl v pořádku, pokračujeme k poděkování
+          }
+        }
+
+        // Úspěšné odeslání -> uložit timestamp do localStorage
+        localStorage.setItem(STORAGE_KEY, Date.now().toString());
+
+        // Zobrazit poděkování
+        showSuccessScreen();
+
+      } catch (err) {
+        console.error("Chyba při odesílání na Google Apps Script:", err);
+        errorMsg.textContent = "Nepodařilo se odeslat hodnocení. Zkontrolujte prosím připojení a zkuste to znovu.";
+        errorAlert.classList.add("show");
+      } finally {
+        isSubmitting = false;
+        submitText.textContent = "ODESLAT";
+        updateSubmitButtonState();
+      }
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitFeedback();
+    });
+
+    btnRetry.addEventListener("click", () => {
+      submitFeedback();
+    });
+
+    // Kontrola limitu při načtení
+    checkCooldown();
+  </script>
+</body>
+</html>
