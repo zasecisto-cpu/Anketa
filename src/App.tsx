@@ -46,8 +46,7 @@ export default function App() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   
   // Nastavení skriptu a URL parametru
-  const [scriptUrl, setScriptUrl] = useState<string>('');
-  const [placeParam, setPlaceParam] = useState<string>('autobusove-stanoviste');
+   const [scriptUrl, setScriptUrl] = useState<string>('https://script.google.com/macros/s/AKfycbw0h5QGrJX27GRd_75cTznF_qF6uG668u-RSLO2ZboXdK8HH19TFSqQytkbIhBcZZSI/exec');  const [placeParam, setPlaceParam] = useState<string>('autobusove-stanoviste');
   
   // Modální okna pro správce / zobrazení kódu
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
@@ -502,7 +501,7 @@ function doGet(e) {
       </div>
 
       {/* Spodní pomocná lišta pro provozovatele / správce */}
-      <aside className="w-full max-w-[440px] mt-4 flex items-center justify-between text-xs text-[#5E6080] px-2">
+       {new URLSearchParams(window.location.search).has('admin') && (<aside className="w-full max-w-[440px] mt-4 flex items-center justify-between text-xs text-[#5E6080] px-2">
         <button
           type="button"
           onClick={() => setShowAdminModal(true)}
@@ -521,7 +520,7 @@ function doGet(e) {
           <FileCode className="w-3.5 h-3.5" />
           <span>Samostatný HTML soubor</span>
         </a>
-      </aside>
+      </aside>)}
 
       {/* Modální okno pro konfiguraci Apps Scriptu & QR kódů */}
       {showAdminModal && (
