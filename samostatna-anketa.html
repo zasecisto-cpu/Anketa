@@ -376,7 +376,7 @@
     <!-- 1. Nadpisy -->
     <header class="header-top">
       <h1 class="main-title">JAK JSTE SPOKOJENI S ČISTOTOU?</h1>
-      <p class="sub-title" id="location-display">Autobusové stanoviště Český Těšín</p>
+      <p class="sub-title" id="location-display">Centrální dopravní terminál</p>
     </header>
 
 
@@ -538,16 +538,11 @@
     const urlParams = new URLSearchParams(window.location.search);
     const rawPlace = urlParams.get("misto") || "autobusove-stanoviste";
 
-    // Formátování názvu místa pro zobrazení
-    function formatPlaceTitle(slug) {
-      if (!slug || slug === "autobusove-stanoviste") {
-        return "Autobusové stanoviště Český Těšín";
-      }
-      // Hezký převod např. "stanoviste-1" -> "Autobusové stanoviště Český Těšín (stanoviště 1)"
-      const cleanName = slug.replace(/[-_]+/g, ' ').trim();
-      return "Autobusové stanoviště Český Těšín (" + cleanName + ")";
+    // Název místa pro zobrazení
+    function formatPlaceTitle() {
+      return "Centrální dopravní terminál";
     }
-    locationDisplay.textContent = formatPlaceTitle(rawPlace);
+    locationDisplay.textContent = formatPlaceTitle();
 
     // Kontrola 1 hodinového limitu v localStorage
     function checkCooldown() {

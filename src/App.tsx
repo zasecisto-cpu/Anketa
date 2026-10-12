@@ -102,13 +102,9 @@ export default function App() {
     localStorage.setItem(SCRIPT_URL_KEY, url.trim());
   };
 
-  // Hezký titulek místa
-  const displayLocation = (slug: string) => {
-    if (!slug || slug === 'autobusove-stanoviste') {
-      return 'Autobusové stanoviště Český Těšín';
-    }
-    const clean = slug.replace(/[-_]+/g, ' ');
-    return `Autobusové stanoviště Český Těšín (${clean})`;
+  // Titulek místa
+  const displayLocation = () => {
+    return 'Centrální dopravní terminál';
   };
 
   // Validace formuláře
@@ -276,7 +272,7 @@ function doGet(e) {
               JAK JSTE SPOKOJENI S ČISTOTOU?
             </h1>
             <p className="text-[#5E6080] text-[0.95rem] font-semibold">
-              {displayLocation(placeParam)}
+              Centrální dopravní terminál
             </p>
           </header>
 

@@ -1,6 +1,6 @@
 {
   "name": "Hodnocení čistoty - Český Těšín",
-  "description": "Mobilní anketa hodnocení čistoty pro autobusové stanoviště v Českém Těšíně od provozovatele REGIS-CZECH, spol. s r.o.",
+  "description": "Mobilní anketa hodnocení čistoty pro Centrální dopravní terminál v Českém Těšíně od provozovatele REGIS-CZECH, spol. s r.o.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
