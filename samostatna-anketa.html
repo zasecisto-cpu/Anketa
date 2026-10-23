@@ -469,7 +469,12 @@
         </svg>
       </div>
       <h2 class="state-title">Děkujeme!</h2>
-      <p class="state-text">Vaše hodnocení nám pomáhá udržet stanoviště čisté.</p>
+      <p class="state-text" id="thanks-text">Vaše hodnocení nám pomáhá udržet stanoviště čisté.</p>
+      <div id="admin-reset-success" style="display:none; padding-top:10px;">
+        <button type="button" id="btn-admin-reset-success" style="background:none; border:none; color:#5E6080; text-decoration:underline; font-size:12px; cursor:pointer;">
+          Odeslat další hodnocení (testovací reset)
+        </button>
+      </div>
     </div>
 
     <!-- Obrazovka limitu 1 hodiny (Anti-spam) -->
@@ -482,6 +487,11 @@
       </div>
       <h2 class="state-title">Děkujeme, hodnocení jste už odeslali.</h2>
       <p class="state-text" id="cooldown-time-msg">Z jednoho zařízení lze hodnotit jednou za hodinu.</p>
+      <div id="admin-reset-cooldown" style="display:none; padding-top:10px;">
+        <button type="button" id="btn-admin-reset-cooldown" style="background:none; border:none; color:#5E6080; text-decoration:underline; font-size:12px; cursor:pointer;">
+          Resetovat limit (pro testování)
+        </button>
+      </div>
     </div>
 
     <!-- 7. Patička -->
@@ -495,11 +505,55 @@
     // ==========================================
     // KONFIGURACE - VLOŽTE URL GOOGLE APPS SCRIPT
     // ==========================================
-    const SCRIPT_URL = ""; // <-- Sem vložte URL webové aplikace Google Apps Script (https://script.google.com/macros/s/.../exec)
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0h5QGrJX27GRd_75cTznF_qF6uG668u-RSLO2ZboXdK8HH19TFSqQytkbIhBcZZSI/exec";
     
-    // Klíč pro uložení času v localStorage (ochrana proti spamu: 1 hodina)
-    const STORAGE_KEY = "regis_cleanliness_rating_timestamp";
+    // Klíč pro uložení času v localStorage (ochrana proti spamu: 1 hodina zvlášť pro každé místo)
+    const STORAGE_KEY_PREFIX = "regis_cleanliness_rating_timestamp_";
     const COOLDOWN_MS = 60 * 60 * 1000; // 1 hodina v milisekundách
+
+    // Definice míst
+    const PLACES = {
+      cdt: {
+        id: "cdt",
+        name: "Centrální dopravní terminál",
+        subtitle: "Centrální dopravní terminál",
+        thanksText: "Vaše hodnocení nám pomáhá udržet stanoviště čisté.",
+        metaTitle: "Hodnocení čistoty - Centrální dopravní terminál",
+        metaDescription: "Rychlá mobilní anketa pro hodnocení čistoty – Centrální dopravní terminál od provozovatele REGIS-CZECH, spol. s r.o."
+      },
+      "wc-noiva": {
+        id: "wc-noiva",
+        name: "Veřejné WC Noiva",
+        subtitle: "Veřejné WC Noiva",
+        thanksText: "Vaše hodnocení nám pomáhá udržet veřejné toalety čisté.",
+        metaTitle: "Hodnocení čistoty - Veřejné WC Noiva",
+        metaDescription: "Rychlá mobilní anketa pro hodnocení čistoty – Veřejné WC Noiva od provozovatele REGIS-CZECH, spol. s r.o."
+      }
+    };
+
+    // Zjištění místa podle cesty v URL nebo parametru ?misto=
+    function resolvePlace() {
+      const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+      const searchParams = new URLSearchParams(window.location.search);
+      const mistoQuery = (searchParams.get('misto') || '').toLowerCase();
+
+      if (path.endsWith('/noiva') || path === '/noiva') {
+        return PLACES['wc-noiva'];
+      }
+      if (path.endsWith('/cdt') || path === '/cdt') {
+        return PLACES.cdt;
+      }
+      if (mistoQuery === 'noiva' || mistoQuery === 'wc-noiva' || mistoQuery === 'toalety') {
+        return PLACES['wc-noiva'];
+      }
+      if (mistoQuery === 'cdt' || mistoQuery === 'autobusove-stanoviste') {
+        return PLACES.cdt;
+      }
+      return PLACES.cdt;
+    }
+
+    const currentPlace = resolvePlace();
+    const isAdmin = new URLSearchParams(window.location.search).has('admin');
 
     // Popisy hvězdiček v češtině
     const STAR_LABELS = {
@@ -520,6 +574,7 @@
     const successScreen = document.getElementById("success-screen");
     const cooldownScreen = document.getElementById("cooldown-screen");
     const locationDisplay = document.getElementById("location-display");
+    const thanksTextEl = document.getElementById("thanks-text");
     
     const btnAno = document.getElementById("btn-ano");
     const btnNe = document.getElementById("btn-ne");
@@ -534,19 +589,19 @@
     const errorMsg = document.getElementById("error-msg");
     const btnRetry = document.getElementById("btn-retry");
 
-    // Načtení parametru ?misto= z URL (výchozí: autobusove-stanoviste)
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawPlace = urlParams.get("misto") || "autobusove-stanoviste";
+    // Nastavení textů a titulku podle místa
+    locationDisplay.textContent = currentPlace.subtitle;
+    if (thanksTextEl) thanksTextEl.textContent = currentPlace.thanksText;
+    document.title = currentPlace.metaTitle;
 
-    // Název místa pro zobrazení
-    function formatPlaceTitle() {
-      return "Centrální dopravní terminál";
+    // Klíč pro localStorage podle místa
+    function getStorageKey(placeId) {
+      return STORAGE_KEY_PREFIX + placeId;
     }
-    locationDisplay.textContent = formatPlaceTitle();
 
-    // Kontrola 1 hodinového limitu v localStorage
+    // Kontrola 1 hodinového limitu v localStorage pro dané místo
     function checkCooldown() {
-      const lastSent = localStorage.getItem(STORAGE_KEY);
+      const lastSent = localStorage.getItem(getStorageKey(currentPlace.id));
       if (lastSent) {
         const diff = Date.now() - parseInt(lastSent, 10);
         if (diff < COOLDOWN_MS) {
@@ -574,6 +629,25 @@
       successScreen.classList.add("show");
       // Posun na začátek karty
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Zobrazení a obsluha testovacích tlačítek pouze pro ?admin
+    if (isAdmin) {
+      const adminResetCooldown = document.getElementById("admin-reset-cooldown");
+      const adminResetSuccess = document.getElementById("admin-reset-success");
+      if (adminResetCooldown) adminResetCooldown.style.display = "block";
+      if (adminResetSuccess) adminResetSuccess.style.display = "block";
+
+      const resetAction = () => {
+        localStorage.removeItem(getStorageKey(currentPlace.id));
+        localStorage.removeItem("regis_cleanliness_rating_timestamp");
+        window.location.reload();
+      };
+
+      const btnResetC = document.getElementById("btn-admin-reset-cooldown");
+      const btnResetS = document.getElementById("btn-admin-reset-success");
+      if (btnResetC) btnResetC.addEventListener("click", resetAction);
+      if (btnResetS) btnResetS.addEventListener("click", resetAction);
     }
 
     // Aktualizace stavu tlačítka ODESLAT
@@ -652,7 +726,7 @@
       const payload = {
         timestamp: new Date().toISOString(),
         formattedDate: new Date().toLocaleString("cs-CZ", { timeZone: "Europe/Prague" }),
-        misto: rawPlace,
+        misto: currentPlace.id,
         cisto: selectedClean,
         hodnoceni: selectedRating,
         poznamka: feedbackText.value.trim()
@@ -687,8 +761,8 @@
           }
         }
 
-        // Úspěšné odeslání -> uložit timestamp do localStorage
-        localStorage.setItem(STORAGE_KEY, Date.now().toString());
+        // Úspěšné odeslání -> uložit timestamp do localStorage pro dané místo
+        localStorage.setItem(getStorageKey(currentPlace.id), Date.now().toString());
 
         // Zobrazit poděkování
         showSuccessScreen();

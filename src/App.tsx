@@ -20,7 +20,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-const STORAGE_KEY = "regis_cleanliness_rating_timestamp";
+const STORAGE_KEY_PREFIX = "regis_cleanliness_rating_timestamp_";
 const SCRIPT_URL_KEY = "regis_cleanliness_script_url";
 const COOLDOWN_MS = 60 * 60 * 1000; // 1 hodina
 
@@ -32,7 +32,68 @@ const STAR_LABELS: Record<number, string> = {
   5: "5 hvězdiček – Velmi spokojen/a"
 };
 
+export interface PlaceConfig {
+  id: string; // hodnota místa posílaná do Google Apps Scriptu ('cdt' | 'wc-noiva')
+  name: string;
+  subtitle: string;
+  thanksText: string;
+  metaTitle: string;
+  metaDescription: string;
+  path: string;
+}
+
+export const PLACES: Record<string, PlaceConfig> = {
+  cdt: {
+    id: "cdt",
+    name: "Centrální dopravní terminál",
+    subtitle: "Centrální dopravní terminál",
+    thanksText: "Vaše hodnocení nám pomáhá udržet stanoviště čisté.",
+    metaTitle: "Hodnocení čistoty - Centrální dopravní terminál",
+    metaDescription: "Rychlá mobilní anketa pro hodnocení čistoty – Centrální dopravní terminál od provozovatele REGIS-CZECH, spol. s r.o.",
+    path: "/cdt"
+  },
+  "wc-noiva": {
+    id: "wc-noiva",
+    name: "Veřejné WC Noiva",
+    subtitle: "Veřejné WC Noiva",
+    thanksText: "Vaše hodnocení nám pomáhá udržet veřejné toalety čisté.",
+    metaTitle: "Hodnocení čistoty - Veřejné WC Noiva",
+    metaDescription: "Rychlá mobilní anketa pro hodnocení čistoty – Veřejné WC Noiva od provozovatele REGIS-CZECH, spol. s r.o.",
+    path: "/noiva"
+  }
+};
+
+function resolvePlace(): PlaceConfig {
+  if (typeof window === 'undefined') return PLACES.cdt;
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+  const searchParams = new URLSearchParams(window.location.search);
+  const mistoQuery = (searchParams.get('misto') || '').toLowerCase();
+
+  // 1. Podle cesty v URL
+  if (path.endsWith('/noiva') || path === '/noiva') {
+    return PLACES['wc-noiva'];
+  }
+  if (path.endsWith('/cdt') || path === '/cdt') {
+    return PLACES.cdt;
+  }
+
+  // 2. Záloha: podpora starého parametru ?misto=
+  if (mistoQuery === 'noiva' || mistoQuery === 'wc-noiva' || mistoQuery === 'toalety') {
+    return PLACES['wc-noiva'];
+  }
+  if (mistoQuery === 'cdt' || mistoQuery === 'autobusove-stanoviste') {
+    return PLACES.cdt;
+  }
+
+  // 3. Výchozí (/ bez cesty)
+  return PLACES.cdt;
+}
+
 export default function App() {
+  // Aktivní místo a režim administrátora
+  const [currentPlace, setCurrentPlace] = useState<PlaceConfig>(resolvePlace);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
   // Stav formuláře
   const [cleanliness, setCleanliness] = useState<'ANO' | 'NE' | null>(null);
   const [rating, setRating] = useState<number | null>(null);
@@ -46,7 +107,7 @@ export default function App() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   
   // Nastavení skriptu a URL parametru
-   const [scriptUrl, setScriptUrl] = useState<string>('https://script.google.com/macros/s/AKfycbw0h5QGrJX27GRd_75cTznF_qF6uG668u-RSLO2ZboXdK8HH19TFSqQytkbIhBcZZSI/exec');  const [placeParam, setPlaceParam] = useState<string>('autobusove-stanoviste');
+  const [scriptUrl, setScriptUrl] = useState<string>('https://script.google.com/macros/s/AKfycbw0h5QGrJX27GRd_75cTznF_qF6uG668u-RSLO2ZboXdK8HH19TFSqQytkbIhBcZZSI/exec');
   
   // Modální okna pro správce / zobrazení kódu
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
@@ -54,27 +115,12 @@ export default function App() {
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
   const [copiedHtml, setCopiedHtml] = useState<boolean>(false);
 
-  // Inicializace parametrů a cooldownu
-  useEffect(() => {
-    // 1. Zjistit místo z URL ?misto=
-    const params = new URLSearchParams(window.location.search);
-    const m = params.get('misto');
-    if (m) {
-      setPlaceParam(m);
-    }
+  // Klíč pro localStorage podle místa
+  const getStorageKey = (placeId: string) => `${STORAGE_KEY_PREFIX}${placeId}`;
 
-    // 2. Načíst uloženou URL Apps Scriptu, pokud existuje
-    const savedUrl = localStorage.getItem(SCRIPT_URL_KEY);
-    if (savedUrl) {
-      setScriptUrl(savedUrl);
-    }
-
-    // 3. Zkontrolovat 1h limit
-    checkCooldown();
-  }, []);
-
-  const checkCooldown = () => {
-    const lastSentStr = localStorage.getItem(STORAGE_KEY);
+  const checkCooldown = (placeId: string) => {
+    const key = getStorageKey(placeId);
+    const lastSentStr = localStorage.getItem(key);
     if (lastSentStr) {
       const lastSent = parseInt(lastSentStr, 10);
       const diff = Date.now() - lastSent;
@@ -89,7 +135,8 @@ export default function App() {
   };
 
   const handleResetCooldown = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getStorageKey(currentPlace.id));
+    localStorage.removeItem("regis_cleanliness_rating_timestamp");
     setCooldownRemaining(null);
     setIsSuccess(false);
     setCleanliness(null);
@@ -102,10 +149,32 @@ export default function App() {
     localStorage.setItem(SCRIPT_URL_KEY, url.trim());
   };
 
-  // Titulek místa
-  const displayLocation = () => {
-    return 'Centrální dopravní terminál';
-  };
+  // Inicializace parametrů, textů a cooldownu
+  useEffect(() => {
+    const adminMode = new URLSearchParams(window.location.search).has('admin');
+    setIsAdmin(adminMode);
+
+    const place = resolvePlace();
+    setCurrentPlace(place);
+
+    // Nastavení titulku stránky a meta tagů
+    document.title = place.metaTitle;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', place.metaDescription);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', place.metaTitle);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', place.metaDescription);
+
+    // Načíst uloženou URL Apps Scriptu, pokud existuje
+    const savedUrl = localStorage.getItem(SCRIPT_URL_KEY);
+    if (savedUrl) {
+      setScriptUrl(savedUrl);
+    }
+
+    // Zkontrolovat 1h limit pro dané místo
+    checkCooldown(place.id);
+  }, []);
 
   // Validace formuláře
   const isValid = cleanliness !== null && rating !== null;
@@ -128,7 +197,7 @@ export default function App() {
     const payload = {
       timestamp: new Date().toISOString(),
       formattedDate: new Date().toLocaleString("cs-CZ", { timeZone: "Europe/Prague" }),
-      misto: placeParam,
+      misto: currentPlace.id,
       cisto: cleanliness,
       hodnoceni: rating,
       poznamka: comment.trim()
@@ -163,8 +232,8 @@ export default function App() {
         }
       }
 
-      // Úspěch -> zapsat čas do localStorage
-      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+      // Úspěch -> zapsat čas do localStorage pro konkrétní místo
+      localStorage.setItem(getStorageKey(currentPlace.id), Date.now().toString());
       setIsSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -251,10 +320,9 @@ function doGet(e) {
   })).setMimeType(ContentService.MimeType.JSON);
 }`;
 
+  const [selectedQrPath, setSelectedQrPath] = useState<string>('/cdt');
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const currentFullUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}${window.location.pathname}?misto=${encodeURIComponent(placeParam)}` 
-    : '';
+  const currentFullUrl = `${currentOrigin}${selectedQrPath}`;
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(currentFullUrl)}&color=2a2c4e&bgcolor=ffffff`;
 
   return (
@@ -272,7 +340,7 @@ function doGet(e) {
               JAK JSTE SPOKOJENI S ČISTOTOU?
             </h1>
             <p className="text-[#5E6080] text-[0.95rem] font-semibold">
-              Centrální dopravní terminál
+              {currentPlace.subtitle}
             </p>
           </header>
 
@@ -290,16 +358,18 @@ function doGet(e) {
               <p className="text-[#5E6080] text-sm font-semibold max-w-[300px]">
                 Z jednoho zařízení lze hodnotit jednou za hodinu. Další hodnocení můžete poslat za cca {cooldownRemaining} min.
               </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleResetCooldown}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#5E6080] hover:text-[#2A2C4E] underline font-medium cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Resetovat limit (pro testování)
-                </button>
-              </div>
+              {isAdmin && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetCooldown}
+                    className="inline-flex items-center gap-1.5 text-xs text-[#5E6080] hover:text-[#2A2C4E] underline font-medium cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Resetovat limit (pro testování)
+                  </button>
+                </div>
+              )}
             </div>
           ) : isSuccess ? (
             /* 6. Stav po odeslání: Poděkování */
@@ -311,17 +381,19 @@ function doGet(e) {
                 Děkujeme!
               </h2>
               <p className="text-[#5E6080] text-base font-semibold max-w-[310px] leading-relaxed">
-                Vaše hodnocení nám pomáhá udržet stanoviště čisté.
+                {currentPlace.thanksText}
               </p>
-              <div className="pt-3">
-                <button
-                  type="button"
-                  onClick={handleResetCooldown}
-                  className="text-xs text-[#5E6080] hover:text-[#2A2C4E] underline font-medium cursor-pointer"
-                >
-                  Odeslat další hodnocení (testovací reset)
-                </button>
-              </div>
+              {isAdmin && (
+                <div className="pt-3">
+                  <button
+                    type="button"
+                    onClick={handleResetCooldown}
+                    className="text-xs text-[#5E6080] hover:text-[#2A2C4E] underline font-medium cursor-pointer"
+                  >
+                    Odeslat další hodnocení (testovací reset)
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             /* Formulář */
@@ -645,37 +717,38 @@ function doGet(e) {
                 <div className="space-y-4">
                   <div>
                     <label className="block font-bold text-[#2A2C4E] mb-1">
-                      Výběr stanoviště / parametru URL (?misto=):
+                      Výběr místa pro QR kód na nálepce:
                     </label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {[
-                        { label: 'Celé stanoviště', val: 'autobusove-stanoviste' },
-                        { label: 'Stanoviště 1', val: 'stanoviste-1' },
-                        { label: 'Stanoviště 2', val: 'stanoviste-2' },
-                        { label: 'Stanoviště 3', val: 'stanoviste-3' },
-                        { label: 'Čekárna', val: 'cekarma' },
-                        { label: 'Toalety / WC', val: 'toalety' },
-                      ].map((loc) => (
-                        <button
-                          key={loc.val}
-                          type="button"
-                          onClick={() => setPlaceParam(loc.val)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer border ${
-                            placeParam === loc.val
-                              ? 'bg-[#DDB43C] text-[#2A2C4E] border-[#DDB43C]'
-                              : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                          }`}
-                        >
-                          {loc.label}
-                        </button>
-                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQrPath('/cdt')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border ${
+                          selectedQrPath === '/cdt'
+                            ? 'bg-[#DDB43C] text-[#2A2C4E] border-[#DDB43C]'
+                            : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                        }`}
+                      >
+                        Centrální dopravní terminál (/cdt)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQrPath('/noiva')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border ${
+                          selectedQrPath === '/noiva'
+                            ? 'bg-[#DDB43C] text-[#2A2C4E] border-[#DDB43C]'
+                            : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                        }`}
+                      >
+                        Veřejné WC Noiva (/noiva)
+                      </button>
                     </div>
                     <input
                       type="text"
-                      value={placeParam}
-                      onChange={(e) => setPlaceParam(e.target.value)}
-                      placeholder="např. stanoviste-1"
-                      className="w-full border border-gray-300 rounded-lg p-2 text-xs"
+                      value={selectedQrPath}
+                      onChange={(e) => setSelectedQrPath(e.target.value)}
+                      placeholder="/cdt nebo /noiva"
+                      className="w-full border border-gray-300 rounded-lg p-2 text-xs font-mono"
                     />
                   </div>
 
@@ -688,16 +761,18 @@ function doGet(e) {
                       />
                     </div>
                     <div className="space-y-2 text-left">
-                      <p className="font-bold text-[#2A2C4E]">QR kód pro nálepku na stanovišti</p>
+                      <p className="font-bold text-[#2A2C4E]">
+                        {selectedQrPath.includes('noiva') ? 'Veřejné WC Noiva' : 'Centrální dopravní terminál'}
+                      </p>
                       <p className="text-gray-500 text-[11px]">
-                        Tento QR kód přímo otevírá anketu s parametrem: <br/>
-                        <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-[#2A2C4E] font-bold">
-                          ?misto={placeParam}
+                        Cílová URL pro nálepku: <br/>
+                        <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-[#2A2C4E] font-bold break-all">
+                          {currentFullUrl}
                         </code>
                       </p>
                       <a
                         href={qrApiUrl}
-                        download={`qr-${placeParam}.png`}
+                        download={`qr${selectedQrPath.replace(/\//g, '-')}.png`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 bg-[#2A2C4E] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
